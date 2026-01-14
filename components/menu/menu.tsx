@@ -8,9 +8,10 @@ import "./menu.css";
 const MenuLinks = [
   { path: "/", label: "Home" },
   { path: "/about", label: "About" },
-  { path: "/lab", label: "Lab" },
-  { path: "/work", label: "Work" },
+  { path: "/login", label: "Login" },
+  {path:"/SignUp",label:"SignUp"},
   { path: "/contact", label: "Contact" },
+  {path:"/profile",label:"Profile"},
 ];
 
 const Menu = () => {
