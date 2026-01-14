@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import gsap from "gsap";
 import "./menu.css";
 
 const MenuLinks = [
@@ -13,56 +14,107 @@ const MenuLinks = [
 ];
 
 const Menu = () => {
-  const container = useRef<HTMLDivElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const linkWrappersRef = useRef<HTMLDivElement[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const toggleMenu = () => {
-    setIsMenuOpen((prev) => !prev);
-  };
+  /* Lock body scroll */
+  useEffect(() => {
+    document.body.style.overflow = isMenuOpen ? "hidden" : "auto";
+  }, [isMenuOpen]);
+
+  /* ESC close */
+  useEffect(() => {
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsMenuOpen(false);
+    };
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, []);
+
+  /* GSAP animation */
+  useEffect(() => {
+    if (!overlayRef.current) return;
+
+    if (isMenuOpen) {
+      gsap.set(overlayRef.current, { pointerEvents: "auto" });
+
+      gsap.to(overlayRef.current, {
+        clipPath: "polygon(0% 0%,100% 0%,100% 100%,0% 100%)",
+        duration: 1,
+        ease: "power4.inOut",
+      });
+
+      gsap.fromTo(
+        linkWrappersRef.current,
+        { y: 60, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          stagger: 0.08,
+          delay: 0.3,
+          duration: 0.6,
+          ease: "power3.out",
+        }
+      );
+    } else {
+      gsap.to(overlayRef.current, {
+        clipPath: "polygon(0% 0%,100% 0%,100% 0%,0% 0%)",
+        duration: 0.8,
+        ease: "power4.inOut",
+        onComplete: () => {
+          gsap.set(overlayRef.current, { pointerEvents: "none" });
+        },
+      });
+    }
+  }, [isMenuOpen]);
 
   return (
-    <div className="menu-container" ref={container}>
-      {/* Top Bar */}
+    <div className="menu-container">
+      {/* TOP BAR */}
       <div className="menu-bar">
-        <div className="menu-logo">
-          <Link href="/">NavBar</Link>
-        </div>
-        <div className="menu-open" onClick={toggleMenu}>
-          <p>Menu</p>
-        </div>
+        <Link href="/" className="menu-logo">
+          NavBar
+        </Link>
+        <button className="menu-open" onClick={() => setIsMenuOpen(true)}>
+          Menu
+        </button>
       </div>
 
-      {/* Overlay */}
-      <div className={`menu-overlay ${isMenuOpen ? "open" : ""}`}>
+      {/* OVERLAY */}
+      <div ref={overlayRef} className="menu-overlay">
         <div className="menu-overlay-bar">
-          <div className="menu-logo">
-            <Link href="/" onClick={toggleMenu}>
-              NavBar
-            </Link>
-          </div>
-          <div className="menu-close" onClick={toggleMenu}>
-            <p>Close</p>
-          </div>
+          <Link href="/" onClick={() => setIsMenuOpen(false)}>
+            NavBar
+          </Link>
+          <button className="menu-close" onClick={() => setIsMenuOpen(false)}>
+            Close
+          </button>
         </div>
 
-        <div className="menu-copy">
-          {/* Links */}
+        <div className="menu-content">
+          {/* LINKS */}
           <div className="menu-links">
-            {MenuLinks.map((link, index) => (
-              <div className="menu-link-item" key={index}>
-                <div
-                  className="menu-link-item-holder"
-                  onClick={toggleMenu}
+            {MenuLinks.map((link, i) => (
+              <div
+                key={i}
+                ref={(el) => {
+                  if (el) linkWrappersRef.current[i] = el;
+                }}
+                className="menu-link-wrapper"
+              >
+                <Link
+                  href={link.path}
+                  className="menu-link"
+                  onClick={() => setIsMenuOpen(false)}
                 >
-                  <Link href={link.path} className="menu-link">
-                    {link.label}
-                  </Link>
-                </div>
+                  {link.label}
+                </Link>
               </div>
             ))}
           </div>
 
-          {/* Info */}
+          {/* INFO */}
           <div className="menu-info">
             <div className="menu-info-col">
               <a href="#">X ↗</a>
@@ -78,9 +130,7 @@ const Menu = () => {
           </div>
         </div>
 
-        <div className="menu-preview">
-          <p>View Showreel</p>
-        </div>
+        <div className="menu-preview">View Showreel</div>
       </div>
     </div>
   );
